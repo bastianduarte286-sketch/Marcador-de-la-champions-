@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marcador Champions para Kick</title>
+<style>
+*{box-sizing:border-box}
+:root{--blue:#080b83;--deep:#070a43;--white:#f4f4f7;--muted:#aab2c7}
+body{margin:0;background:#10131b;color:#f7f8fb;font-family:Arial,Helvetica,sans-serif}
+button,input{font:inherit}
+button{border:0;border-radius:9px;padding:11px 14px;background:#303d55;color:white;font-weight:800;cursor:pointer}
+button.primary{background:#243cff}button.good{background:#16834b}button.danger{background:#87333c}
+.wrap{max-width:900px;margin:auto;padding:16px}
+h1{font-size:23px;margin:5px 0 7px}
+.note{color:#aeb8c8;font-size:13px;line-height:1.45;margin:0 0 16px}
+.card{background:#1a202b;border:1px solid #303b4d;border-radius:14px;padding:15px;margin:12px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{display:block;font-size:13px;color:#bdc6d6;margin:10px 0 5px}
+input[type=text],input[type=number]{width:100%;padding:11px;border-radius:8px;border:1px solid #3b475a;background:#0e131c;color:white}
+input[type=file]{max-width:100%;color:#c5cede}
+.crestprev{width:54px;height:54px;object-fit:contain;display:block;margin:8px 0;background:#101522;border-radius:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}.row button{flex:1;min-width:95px}
+.clockControl{text-align:center;font-size:30px;font-weight:900;margin:8px}
+.preview{overflow-x:auto;padding:15px 0 8px}
+.scorebug{display:flex;align-items:stretch;height:62px;width:max-content;min-width:100%;filter:drop-shadow(0 2px 4px #0008);font-weight:900}
+.starball{width:54px;display:flex;align-items:center;justify-content:center;color:white;font-size:30px;background:var(--blue)}
+.timebox{height:62px;min-width:116px;padding:0 13px;background:#ececf0;color:#101326;display:flex;align-items:center;justify-content:center;font-size:30px;letter-spacing:-1px}
+.team{height:62px;min-width:110px;padding:0 13px;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;gap:9px;font-size:27px}
+.team img{width:34px;height:38px;object-fit:contain}
+.score{height:62px;min-width:102px;padding:0 12px;background:#f1f1f4;color:#080b20;display:flex;align-items:center;justify-content:center;font-size:37px;letter-spacing:1px}
+.goalbar{display:none;margin-top:8px;height:43px;align-items:center;gap:10px}
+.goalbar.show{display:flex}
+.goalicon{background:var(--blue);padding:8px 13px;color:white;font-size:22px}
+.goaltext{background:var(--blue);color:white;text-align:center;padding:10px 22px;min-width:160px;font-weight:900;letter-spacing:1px}
+.overlayHelp{font-size:12px;color:#aab4c5;line-height:1.45}
+body.overlaymode{background:transparent}
+#overlay{display:none;padding:8px;min-height:100vh;align-items:flex-start;justify-content:flex-start}
+#overlay .scorebug{min-width:0}
+#overlay .goalbar{margin-top:7px}
+@media(max-width:600px){
+ .wrap{padding:10px}.grid{grid-template-columns:1fr}
+ .scorebug{height:48px}.starball{width:39px;font-size:23px}
+ .timebox{height:48px;min-width:83px;font-size:23px;padding:0 8px}
+ .team{height:48px;min-width:77px;font-size:20px;padding:0 7px;gap:5px}
+ .team img{width:27px;height:30px}
+ .score{height:48px;min-width:72px;font-size:28px;padding:0 8px}
+ #overlay{padding:7px 5px}
+}
+</style>
+</head>
+<body>
+<div id="control" class="wrap">
+ <h1>🏆 Marcador Champions League</h1>
+ <p class="note">Panel de control para tu transmisión. Editá los equipos, cargá sus escudos y manejá el resultado y el reloj.</p>
+ <div class="card">
+  <div class="grid">
+   <section>
+    <h3>Equipo local</h3>
+    <label>Nombre</label><input id="homeName" type="text" value="REAL MADRID" maxlength="24">
+    <label>Sigla</label><input id="homeAbbr" type="text" value="RMA" maxlength="4">
+    <img id="homePrev" class="crestprev" alt="Escudo local">
+    <label>Escudo del equipo</label><input id="homeFile" type="file" accept="image/*">
+    <div class="row"><button onclick="goal('h',-1)">− Gol</button><button class="good" onclick="goal('h',1)">+ Gol</button></div>
+   </section>
+   <section>
+    <h3>Equipo visitante</h3>
+    <label>Nombre</label><input id="awayName" type="text" value="PARIS SAINT-GERMAIN" maxlength="24">
+    <label>Sigla</label><input id="awayAbbr" type="text" value="PSG" maxlength="4">
+    <img id="awayPrev" class="crestprev" alt="Escudo visitante">
+    <label>Escudo del equipo</label><input id="awayFile" type="file" accept="image/*">
+    <div class="row"><button onclick="goal('a',-1)">− Gol</button><button class="good" onclick="goal('a',1)">+ Gol</button></div>
+   </section>
+  </div>
+ </div>
+ <div class="card">
+  <label>Reloj del partido</label><div class="clockControl" id="clock">00:00</div>
+  <div class="row"><button class="good" onclick="start()">▶ Iniciar</button><button onclick="pause()">Ⅱ Pausar</button><button onclick="resetClock()">↺ Cero</button></div>
+  <div class="row"><button onclick="add(60)">+1 minuto</button><button onclick="add(300)">+5 minutos</button><button onclick="add(900)">+15 minutos</button></div>
+  <label>Período</label><div class="row"><button onclick="period('1T')">1T</button><button onclick="period('ET')">ET</button><button onclick="period('2T')">2T</button><button onclick="period('FINAL')">FINAL</button></div>
+ </div>
+ <div class="card">
+  <h3>Vista previa</h3>
+  <div class="preview"><div class="scorebug">
+   <div class="starball">✦</div><div class="timebox" id="pTime">00:00</div>
+   <div class="team"><img id="pHomeCrest" alt=""><span id="pHomeAbbr">RMA</span></div>
+   <div class="score"><span id="pHS">0</span>&nbsp;&nbsp;<span id="dash">0</span></div>
+   <div class="team"><span id="pAwayAbbr">PSG</span><img id="pAwayCrest" alt=""></div>
+  </div><div class="goalbar" id="pGoal"><div class="goalicon">✦</div><div class="goaltext">GOAL</div></div></div>
+  <div class="row"><button class="primary" onclick="openOverlay()">Abrir marcador limpio para OBS / Kick ↗</button><button class="danger" onclick="resetAll()">Reiniciar partido</button></div>
+  <p class="overlayHelp">Abrí la vista limpia en otra pestaña y usá esa dirección como fuente de navegador en tu programa de stream. El fondo queda transparente. El cartel GOAL aparece automáticamente al sumar un gol.</p>
+ </div>
+</div>
+<div id="overlay"><div>
+ <div class="scorebug">
+  <div class="starball">✦</div><div class="timebox" id="oTime">00:00</div>
+  <div class="team"><img id="oHomeCrest" alt=""><span id="oHomeAbbr">RMA</span></div>
+  <div class="score"><span id="oHS">0</span>&nbsp;&nbsp;<span id="oAS">0</span></div>
+  <div class="team"><span id="oAwayAbbr">PSG</span><img id="oAwayCrest" alt=""></div>
+ </div>
+ <div class="goalbar" id="oGoal"><div class="goalicon">✦</div><div class="goaltext">GOAL</div></div>
+</div></div>
+<script>
+const $=id=>document.getElementById(id);
+const base={hn:'REAL MADRID',ha:'RMA',an:'PARIS SAINT-GERMAIN',aa:'PSG',hs:0,as:0,hc:'',ac:'',sec:0,p:'1T',run:false,goalUntil:0};
+let s={...base},timer=null,goalTimer=null;
+const overlay=new URLSearchParams(location.search).has('overlay');
+const blank='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><path d="M40 5 70 22v36L40 75 10 58V22z" fill="#14204c" stroke="#8ba6ff" stroke-width="4"/><path d="m40 17 6 15 16 1-12 10 4 16-14-9-14 9 4-16-12-10 16-1z" fill="#fff"/></svg>');
+function fmt(n){return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')}
+function save(){try{localStorage.setItem('championsScoreboard',JSON.stringify(s))}catch(e){}draw()}
+function showGoal(){const visible=Date.now()<s.goalUntil; $('pGoal').classList.toggle('show',visible);$('oGoal').classList.toggle('show',visible)}
+function draw(){
+ if(overlay){
+  $('oTime').textContent=fmt(s.sec);$('oHomeAbbr').textContent=s.ha;$('oAwayAbbr').textContent=s.aa;
+  $('oHS').textContent=s.hs;$('oAS').textContent=s.as;
+  $('oHomeCrest').src=s.hc||blank;$('oAwayCrest').src=s.ac||blank;
+ }else{
+  $('homeName').value=s.hn;$('homeAbbr').value=s.ha;$('awayName').value=s.an;$('awayAbbr').value=s.aa;
+  $('homePrev').src=s.hc||blank;$('awayPrev').src=s.ac||blank;
+  $('clock').textContent=fmt(s.sec);$('pTime').textContent=fmt(s.sec);
+  $('pHomeAbbr').textContent=s.ha;$('pAwayAbbr').textContent=s.aa;
+  $('pHS').textContent=s.hs;$('dash').textContent='– '+s.as;
+  $('pHomeCrest').src=s.hc||blank;$('pAwayCrest').src=s.ac||blank;
+ }
+ showGoal();
+}
+function goal(side,delta){
+ const key=side==='h'?'hs':'as';const next=Math.max(0,s[key]+delta);
+ if(next>s[key])s.goalUntil=Date.now()+5000;
+ s[key]=next;save();
+}
+function start(){if(s.run)return;s.run=true;timer=setInterval(()=>{s.sec++;save()},1000);save()}
+function pause(){s.run=false;clearInterval(timer);timer=null;save()}
+function resetClock(){pause();s.sec=0;save()}
+function add(n){s.sec=Math.max(0,s.sec+n);save()}
+function period(p){s.p=p;save()}
+function resetAll(){pause();s={...base};save()}
+function openOverlay(){window.open(location.pathname+'?overlay=1','championsScoreboard','width=1000,height=180')}
+function bindFile(input,key){$(input).addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{s[key]=reader.result;save()};reader.readAsDataURL(f)})}
+if(overlay){document.body.className='overlaymode';$('control').style.display='none';$('overlay').style.display='flex'}
+else{
+ $('homeName').addEventListener('input',e=>{s.hn=e.target.value;save()});
+ $('homeAbbr').addEventListener('input',e=>{s.ha=e.target.value.toUpperCase().slice(0,4);save()});
+ $('awayName').addEventListener('input',e=>{s.an=e.target.value;save()});
+ $('awayAbbr').addEventListener('input',e=>{s.aa=e.target.value.toUpperCase().slice(0,4);save()});
+ bindFile('homeFile','hc');bindFile('awayFile','ac');
+}
+window.addEventListener('storage',e=>{if(e.key==='championsScoreboard'&&e.newValue){try{s={...base,...JSON.parse(e.newValue)};draw()}catch(_){}}});
+try{s={...base,...JSON.parse(localStorage.getItem('championsScoreboard')||'{}')}}catch(e){}
+if(s.run){s.run=false}
+draw();
+</script>
+</body>
+</html>
